@@ -2,6 +2,7 @@ import pygame
 import pygame_gui
 import pygame._sdl2
 import numpy as np
+from scipy.ndimage import convolve
 import cv2
 import sys
 
@@ -17,8 +18,10 @@ class Game:
         self.window_width = 800
         self.screen = pygame.display.set_mode((self.window_width, self.window_height), pygame.RESIZABLE)
         self.clock = pygame.time.Clock()
-        # self.board = np.random.randint(2, size=(200,200))
-        self.board = np.random.choice([0, 255], (200, 200)).astype(np.uint8)
+        self.board_size = (100, 100)
+        self.board = np.zeros(self.board_size)
+        self.board = np.random.choice([0, 1], self.board_size)
+
         self.block_size = 30
         self.gap = 1
         self.zoom = 2
@@ -66,11 +69,11 @@ class Game:
 
         # Draw Game of Life Grid
         if pygame.time.get_ticks() - self.last_draw > self.next_frame_time and not self.stop_grid:
-            self.board = np.random.choice([0, 255], (200,200)).astype(np.uint8)
-            # self.game_of_life_generation()
+            # self.board = np.random.choice([0, 1], self.board_size)
+            self.game_of_life_generation()
             self.last_draw = pygame.time.get_ticks()
 
-        self.draw_grid()
+        self.draw_board()
 
         #Mask Surface
         self.game_panel_center = (self.game_panel_size[0]//2, self.game_panel_size[1]//2)
@@ -80,16 +83,26 @@ class Game:
         self.game_panel.blit(self.game_panel_mask, (0,0), special_flags=pygame.BLEND_RGBA_MIN)
         self.screen.blit(self.game_panel, self.game_panel_margins)
 
-    def draw_grid(self):
+    def game_of_life_generation(self):
+        kernel = np.array([[1, 1, 1],
+                            [1, 0, 1],
+                            [1, 1, 1]])
+        
+        neighbors = convolve(self.board, kernel, mode='constant', cval=0)
+
+        self.board = (neighbors == 3) | ((self.board == 1) & (neighbors == 2)).astype(np.uint8)
+
+    def draw_board(self):
         # Constants
         board_size = self.board.shape[0] * self.block_size
 
         # Draw Grid
-        board_img = cv2.resize(self.board, (board_size, board_size), interpolation=cv2.INTER_NEAREST)
+        scaled = self.board*255
+        board_img = cv2.resize(scaled.astype(np.uint8), (board_size, board_size), interpolation=cv2.INTER_NEAREST)
         board_img = cv2.cvtColor(board_img, cv2.COLOR_GRAY2BGR)
-        for i in range(0, board_size, self.block_size):
-            cv2.line(board_img, (i, 0), (i, board_size), GREEN, self.gap)
-            cv2.line(board_img, (0, i), (board_size, i), GREEN, self.gap)
+        # for i in range(0, board_size, self.block_size):
+        #     cv2.line(board_img, (i, 0), (i, board_size), GREEN, self.gap)
+        #     cv2.line(board_img, (0, i), (board_size, i), GREEN, self.gap)
         
         # Calculate the panel dimensions and center coordinates
         panel_width, panel_height = self.game_panel.get_width(), self.game_panel.get_height()
@@ -154,7 +167,7 @@ class Game:
 
     def run(self):
         while self.running:
-            self.time_delta = self.clock.tick(60) / 1000.0
+            self.time_delta = self.clock.tick() / 1000.0
 
             self.handle_events()
             
@@ -162,12 +175,11 @@ class Game:
 
             self.manager.update(self.time_delta)
             self.manager.draw_ui(self.screen)
+            print(self.clock.get_fps())
             pygame.display.flip()
 
         pygame.quit()
         sys.exit()
-
-
 
 # Main function
 if __name__ == "__main__":
