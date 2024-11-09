@@ -26,6 +26,7 @@ class Game:
         self.gap = 1
         self.zoom = 2
         self.zoom_limit = (0.1, 25)
+        self.moved = False
         
         ## Game Panel
         self.game_panel_margins = (20, 20)
@@ -71,9 +72,13 @@ class Game:
         if pygame.time.get_ticks() - self.last_draw > self.next_frame_time and not self.stop_grid:
             # self.board = np.random.choice([0, 1], self.board_size)
             self.game_of_life_generation()
+            self.draw_board()
+            self.resize_board()
             self.last_draw = pygame.time.get_ticks()
 
-        self.draw_board()
+        elif self.moved:
+            self.resize_board()
+            self.moved = False
 
         #Mask Surface
         self.game_panel_center = (self.game_panel_size[0]//2, self.game_panel_size[1]//2)
@@ -85,8 +90,8 @@ class Game:
 
     def game_of_life_generation(self):
         kernel = np.array([[1, 1, 1],
-                            [1, 0, 1],
-                            [1, 1, 1]])
+                           [1, 0, 1],
+                           [1, 1, 1]])
         
         neighbors = convolve(self.board, kernel, mode='constant', cval=0)
 
@@ -153,6 +158,7 @@ class Game:
                 self.resize_window(event.w, event.h)
 
             elif event.type == pygame.MOUSEWHEEL:
+                self.moved = True
                 if event.y > 0: 
                     self.zoom = min(self.zoom_limit[1], self.zoom*1.2)
                 else: 
@@ -175,7 +181,7 @@ class Game:
 
             self.manager.update(self.time_delta)
             self.manager.draw_ui(self.screen)
-            print(self.clock.get_fps())
+            # print(self.clock.get_fps())
             pygame.display.flip()
 
         pygame.quit()
