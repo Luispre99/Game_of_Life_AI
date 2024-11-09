@@ -103,12 +103,16 @@ class Game:
 
         # Draw Grid
         scaled = self.board*255
-        board_img = cv2.resize(scaled.astype(np.uint8), (board_size, board_size), interpolation=cv2.INTER_NEAREST)
-        board_img = cv2.cvtColor(board_img, cv2.COLOR_GRAY2BGR)
-        # for i in range(0, board_size, self.block_size):
-        #     cv2.line(board_img, (i, 0), (i, board_size), GREEN, self.gap)
-        #     cv2.line(board_img, (0, i), (board_size, i), GREEN, self.gap)
+        self.board_img = cv2.resize(scaled.astype(np.uint8), (board_size, board_size), interpolation=cv2.INTER_NEAREST)
+        self.board_img = cv2.cvtColor(self.board_img, cv2.COLOR_GRAY2BGR)
+        for i in range(0, board_size, self.block_size):
+            cv2.line(self.board_img, (i, 0), (i, board_size), GREEN, self.gap)
+            cv2.line(self.board_img, (0, i), (board_size, i), GREEN, self.gap)
         
+    def resize_board(self):
+        # Constants
+        board_size = self.board.shape[0] * self.block_size
+
         # Calculate the panel dimensions and center coordinates
         panel_width, panel_height = self.game_panel.get_width(), self.game_panel.get_height()
         center_x, center_y = board_size // 2, board_size // 2
@@ -120,7 +124,7 @@ class Game:
         end_y = min(board_size, center_y + int(panel_height // (2 * self.zoom)))
 
         # Crop board image
-        cropped_board_img = board_img[start_x:end_x, start_y:end_y]
+        cropped_board_img = self.board_img[start_x:end_x, start_y:end_y]
 
         # Apply zoom to the cropped region
         zoomed_size = (int(cropped_board_img.shape[1] * self.zoom), int(cropped_board_img.shape[0] * self.zoom))
