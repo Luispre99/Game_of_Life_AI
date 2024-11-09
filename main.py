@@ -5,10 +5,11 @@ import numpy as np
 from scipy.ndimage import convolve
 import cv2
 import sys
+import math
 
 # Constants
 BLACK = (0, 0, 0)
-GREEN = (0, 0, 0)
+GREEN = (50, 50, 50)
 WHITE = (200, 200, 200)
 PANEL_RADIUS = 20
 
@@ -22,10 +23,10 @@ class Game:
         self.board = np.zeros(self.board_size)
         self.board = np.random.choice([0, 1], self.board_size)
 
-        self.block_size = 30
         self.gap = 1
-        self.zoom = 2
-        self.zoom_limit = (0.1, 25)
+        self.block_size = 30 + self.gap
+        self.zoom = 1
+        self.zoom_limit = (0.01, 25)
         self.moved = False
         
         ## Game Panel
@@ -60,7 +61,7 @@ class Game:
         )
 
         self.last_draw = pygame.time.get_ticks()
-        self.next_frame_time = 500
+        self.next_frame_time = 100
         self.stop_grid = False
         self.running = True       
 
@@ -72,18 +73,20 @@ class Game:
         if pygame.time.get_ticks() - self.last_draw > self.next_frame_time and not self.stop_grid:
             # self.board = np.random.choice([0, 1], self.board_size)
             self.game_of_life_generation()
-            self.draw_board()
             self.resize_board()
+            self.draw_board()
             self.last_draw = pygame.time.get_ticks()
 
         elif self.moved:
             self.resize_board()
+            self.draw_board()
             self.moved = False
 
         #Mask Surface
         self.game_panel_center = (self.game_panel_size[0]//2, self.game_panel_size[1]//2)
         self.game_panel_grid_center = (self.game_panel_grid.get_width()//2, self.game_panel_grid.get_height()//2)
         game_panel_grid_pos = (self.game_panel_center[0] - self.game_panel_grid_center[0], self.game_panel_center[1] - self.game_panel_grid_center[1])
+        
         self.game_panel.blit(self.game_panel_grid, game_panel_grid_pos)
         self.game_panel.blit(self.game_panel_mask, (0,0), special_flags=pygame.BLEND_RGBA_MIN)
         self.screen.blit(self.game_panel, self.game_panel_margins)
@@ -97,43 +100,42 @@ class Game:
 
         self.board = (neighbors == 3) | ((self.board == 1) & (neighbors == 2)).astype(np.uint8)
 
-    def draw_board(self):
-        # Constants
-        board_size = self.board.shape[0] * self.block_size
-
-        # Draw Grid
-        scaled = self.board*255
-        self.board_img = cv2.resize(scaled.astype(np.uint8), (board_size, board_size), interpolation=cv2.INTER_NEAREST)
-        self.board_img = cv2.cvtColor(self.board_img, cv2.COLOR_GRAY2BGR)
-        for i in range(0, board_size, self.block_size):
-            cv2.line(self.board_img, (i, 0), (i, board_size), GREEN, self.gap)
-            cv2.line(self.board_img, (0, i), (board_size, i), GREEN, self.gap)
-        
     def resize_board(self):
         # Constants
-        board_size = self.board.shape[0] * self.block_size
+        board_size = self.board.shape
 
-        # Calculate the panel dimensions and center coordinates
+        # Calculate the panel dimensions and the board's center coordinates
         panel_width, panel_height = self.game_panel.get_width(), self.game_panel.get_height()
-        center_x, center_y = board_size // 2, board_size // 2
+        center_x, center_y = board_size[0] // 2, board_size[1] // 2
 
         # Calculate the cropping region based on the panel size
-        start_x = max(0, center_x - int(panel_width // (2 * self.zoom)))
-        start_y = max(0, center_y - int(panel_height // (2 * self.zoom)))
-        end_x = min(board_size, center_x + int(panel_width // (2 * self.zoom)))
-        end_y = min(board_size, center_y + int(panel_height // (2 * self.zoom)))
+        start_x = max(0, int(center_x - (panel_width // (2 * self.zoom * self.block_size))-1))
+        start_y = max(0, int(center_y - (panel_height // (2 * self.zoom * self.block_size))-1))
+        end_x = min(board_size[0], int(center_x + (panel_width // (2 * self.zoom * self.block_size))+1))
+        end_y = min(board_size[1], int(center_y + (panel_height // (2 * self.zoom * self.block_size))+1))
+        print(start_x,start_y, end_x, end_y)
+        # Crop board
+        self.cropped_board = self.board[start_x:end_x, start_y:end_y]
 
-        # Crop board image
-        cropped_board_img = self.board_img[start_x:end_x, start_y:end_y]
+    def draw_board(self):
+        # Draw Grid and apply zoom to the cropped region
 
-        # Apply zoom to the cropped region
-        zoomed_size = (int(cropped_board_img.shape[1] * self.zoom), int(cropped_board_img.shape[0] * self.zoom))
-        board_img = cv2.resize(cropped_board_img, zoomed_size, interpolation=cv2.INTER_NEAREST)
+        cropped_board = self.cropped_board*255
+        zoomed_size = (int(cropped_board.shape[1] * int(self.zoom * self.block_size)),
+                       int(cropped_board.shape[0] * int(self.zoom * self.block_size)))
+        cropped_img = cv2.resize(cropped_board, zoomed_size, interpolation=cv2.INTER_NEAREST)
+        cropped_img = cv2.cvtColor(cropped_img, cv2.COLOR_GRAY2BGR)
+        
+        # Draw grid lines
+        for i in range(0, cropped_img.shape[1], int(self.block_size * self.zoom)):
+            cv2.line(cropped_img, (i, 0), (i, zoomed_size[1]), GREEN, self.gap)
+        for i in range(0, cropped_img.shape[0], int(self.block_size * self.zoom)):
+            cv2.line(cropped_img, (0, i), (zoomed_size[0], i), GREEN, self.gap)
 
         # Convert to Pygame surface
-        self.game_panel_grid = pygame.surfarray.make_surface(board_img)
-        # cv2.imshow('Image with self.self.gaps', cv2.transpose(board_img))
-
+        self.game_panel_grid = pygame.surfarray.make_surface(cropped_img)
+        # cv2.imshow('Image with self.self.gaps', cv2.transpose(cropped_img))
+    
     def resize_window(self, new_width, new_height):
 
         self.window_height = new_height
