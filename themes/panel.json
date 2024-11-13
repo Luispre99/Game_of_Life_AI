@@ -108,12 +108,12 @@
         "colours":
         {
             "dark_bg": "rgba(0, 0, 0, 0)",
-            "normal_text": "#c5cbd8"
+            "normal_text": "#ffffff"
         },
         "font":
         {
             "size": "15",
-            "bold": "1",
+            "bold": "0",
             "italic": "0"
         },
         "misc":

@@ -44,7 +44,20 @@ class Game:
             starting_height=0,
             manager=self.manager
         )
-
+        
+        self.title = pygame.image.load('themes/title.png')
+        image_rect = self.title.get_size()
+        scale = self.control_panel_size[0]/image_rect[0]
+        image_rect = (image_rect[0]*scale, image_rect[1]*scale)
+        self.image_element = pygame_gui.elements.UIImage(
+            relative_rect=pygame.Rect(0,20,image_rect[0],image_rect[1]), 
+            image_surface=self.title,
+            manager=self.manager,
+            container=self.control_panel,
+            anchors={
+                "centerx":"centerx"
+            }
+        )
         ## Button Panel
         self.button_panel = pygame_gui.elements.UIPanel(
             relative_rect=pygame.Rect(0, -280, self.control_panel_size[0], 150),
@@ -155,7 +168,7 @@ class Game:
             anchors={"bottom":"bottom"}
         )
         self.figure_menu_label = pygame_gui.elements.UILabel(
-            relative_rect=pygame.Rect((-10, -25), (150, 20)),
+            relative_rect=pygame.Rect((-15, -30), (150, 30)),
             text='Select Figure:',
             manager=self.manager,
             container=self.control_panel,
@@ -272,6 +285,14 @@ class Game:
                                                              self.window_height - self.game_panel_margins[1] * 2)
         self.control_panel.set_relative_position((self.game_panel_size[0] + self.game_panel_margins[0] * 2, self.game_panel_margins[1]))
         self.control_panel.set_dimensions(self.control_panel_size)
+
+        # Resize Game Title
+        self.title = pygame.image.load('themes/title.png')
+        image_rect = self.title.get_size()
+        scale = self.control_panel_size[0]/image_rect[0]
+        self.title = pygame.transform.scale(self.title, (image_rect[0]*scale, image_rect[1]*scale))
+        self.image_element.set_dimensions((image_rect[0]*scale, image_rect[1]*scale))
+        
         self.control_panel.rebuild()
 
     def handle_events(self):
