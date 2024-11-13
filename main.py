@@ -47,7 +47,7 @@ class Game:
 
         ## Button Panel
         self.button_panel = pygame_gui.elements.UIPanel(
-            relative_rect=pygame.Rect(0, 200, self.control_panel_size[0], 150),
+            relative_rect=pygame.Rect(0, -280, self.control_panel_size[0], 150),
             object_id="#button_panel",
             starting_height=2,
             manager=self.manager,
@@ -55,7 +55,7 @@ class Game:
             anchors={
                 'left': 'left',
                 'right': 'right',
-                'top': 'top'}
+                'bottom': 'bottom'}
         )
         self.aux_button = pygame_gui.elements.UIButton(
             relative_rect=pygame.Rect((0, 0), (0, 200)),
@@ -122,7 +122,7 @@ class Game:
             }
         )
         self.slider = pygame_gui.elements.UIHorizontalSlider(
-            relative_rect=pygame.Rect(10, 30, self.control_panel_size[0]-20, 20),
+            relative_rect=pygame.Rect(30, 30, self.control_panel_size[0]-60, 22),
             start_value=250,
             value_range=(0, 500),
             manager=self.manager,
@@ -142,6 +142,26 @@ class Game:
                 'bottom': 'bottom',
                 'centerx_target': self.slider, 
                 'bottom_target': self.slider
+            }
+        )
+
+        self.figure_menu = pygame_gui.elements.UIDropDownMenu(
+            options_list=["","Figure","Figure2","Figure3"],
+            starting_option="",
+            relative_rect=pygame.Rect((10, -350), (150, 25)),
+            object_id="#figure_menu",
+            manager=self.manager,
+            container=self.control_panel,   
+            anchors={"bottom":"bottom"}
+        )
+        self.figure_menu_label = pygame_gui.elements.UILabel(
+            relative_rect=pygame.Rect((-10, -25), (150, 20)),
+            text='Select Figure:',
+            manager=self.manager,
+            container=self.control_panel,
+            anchors={ 
+                'bottom': 'bottom',
+                'bottom_target': self.figure_menu
             }
         )
 
