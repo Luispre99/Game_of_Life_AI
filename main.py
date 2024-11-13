@@ -12,43 +12,137 @@ BLACK = (0, 0, 0)
 GREEN = (50, 50, 50)
 WHITE = (200, 200, 200)
 PANEL_RADIUS = 20
+GAME_WIDTH_RATIO = 0.7
+CONTROL_WIDTH_RATIO = 1 - GAME_WIDTH_RATIO
 
 class Game:
     def __init__(self):
         self.window_height = 600
         self.window_width = 800
         self.screen = pygame.display.set_mode((self.window_width, self.window_height), pygame.RESIZABLE)
+        self.screen.fill(GREEN)
         self.clock = pygame.time.Clock()
         
         ## Game Panel
         self.game_panel_margins = (20, 20)
-        self.game_panel_size = (int(self.window_width*0.7) - self.game_panel_margins[0]*2,
-                                        self.window_height - self.game_panel_margins[1]*2)
-        self.game_panel = pygame.Surface(self.game_panel_size)
+        self.game_panel_size = (int(self.window_width * GAME_WIDTH_RATIO - self.game_panel_margins[0] * 1.5),
+                                                      self.window_height - self.game_panel_margins[1] * 2)
+        self.game_panel = pygame.Surface(self.game_panel_size, pygame.SRCALPHA)
         self.game_panel_grid = pygame.Surface(self.game_panel_size, pygame.SRCALPHA)
         self.game_panel_mask = pygame.Surface(self.game_panel_size, pygame.SRCALPHA)
-        pygame.draw.rect(self.game_panel_mask, (255, 255, 255, 0), (0,0)+self.game_panel_size, border_radius=PANEL_RADIUS)
+        pygame.draw.rect(self.game_panel_mask, (255, 255, 255, 255), (0,0)+self.game_panel_size, border_radius=PANEL_RADIUS)
         
         ## Control Panel
         self.manager = pygame_gui.UIManager((self.window_width, self.window_height), theme_path='themes/panel.json')
+        self.control_panel_pos  = (self.game_panel_size[0] + self.game_panel_margins[0] * 2, self.game_panel_margins[1])
+        self.control_panel_size = (int(self.window_width * CONTROL_WIDTH_RATIO) - self.game_panel_margins[0] * 1.5,
+                                                             self.window_height - self.game_panel_margins[1] * 2)
         self.control_panel = pygame_gui.elements.UIPanel(
-            relative_rect=pygame.Rect((int(self.window_width*0.7), self.game_panel_margins[1]), (int(self.window_width*0.3) - self.game_panel_margins[0], self.window_height - self.game_panel_margins[1]*2)),
+            relative_rect=pygame.Rect(self.control_panel_pos,
+                                      self.control_panel_size),
+            object_id="#control_panel",
             starting_height=0,
             manager=self.manager
         )
-        self.button_on_panel = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect(0, 0, 150, 50),
-            text='STOP',
+
+        ## Button Panel
+        self.button_panel = pygame_gui.elements.UIPanel(
+            relative_rect=pygame.Rect(0, 200, self.control_panel_size[0], 150),
+            object_id="#button_panel",
+            starting_height=2,
             manager=self.manager,
             container=self.control_panel,
-            anchors={'center': 'center'}
+            anchors={
+                'left': 'left',
+                'right': 'right',
+                'top': 'top'}
         )
-        self.label = pygame_gui.elements.UILabel(
-            relative_rect=pygame.Rect(0, 0, 150, 50),
-            text="Control Panel",
+        self.aux_button = pygame_gui.elements.UIButton(
+            relative_rect=pygame.Rect((0, 0), (0, 200)),
+            text='',
+            object_id="#stop_button",
+            manager=self.manager,
+            container=self.button_panel,
+            anchors={"center":"center"}
+        )
+        self.stop_button = pygame_gui.elements.UIButton(
+            relative_rect=pygame.Rect((10, 10), (self.control_panel_size[0]//2-20, 50)),
+            text='STOP',
+            object_id="#stop_button",
+            manager=self.manager,
+            container=self.button_panel,
+            anchors={"right": "right",
+                     "left": "left",
+                     "right_target":self.aux_button}
+        )
+        self.reset_button = pygame_gui.elements.UIButton(
+            relative_rect=pygame.Rect((10, 10), (self.control_panel_size[0]//2-20, 50)),
+            text='RESET',
+            object_id="#reset_button",
+            manager=self.manager,
+            container=self.button_panel,
+            anchors={"right": "right",
+                     "left": "left",
+                     "left_target":self.aux_button}
+        )
+        self.mix_button = pygame_gui.elements.UIButton(
+            relative_rect=pygame.Rect(10, -60, self.control_panel_size[0]//2-20, 50),
+            text='MIX',
+            object_id="#mix_button",
+            manager=self.manager,
+            container=self.button_panel,
+            anchors={"bottom": "bottom",
+                     "right": "right",
+                     "left": "left",
+                     "right_target":self.aux_button}
+        )
+        self.dummy_button = pygame_gui.elements.UIButton(
+            relative_rect=pygame.Rect(10, -60, self.control_panel_size[0]//2-20, 50),
+            text='DUMB',
+            object_id="#dummy_button",
+            manager=self.manager,
+            container=self.button_panel,
+            anchors={"bottom": "bottom",
+                     "right": "right",
+                     "left": "left",
+                     "left_target":self.aux_button}
+        )
+
+        ## Slider Panel
+        self.slider_panel = pygame_gui.elements.UIPanel(
+            relative_rect=pygame.Rect(0, -100, self.control_panel_size[0], 100),
+            starting_height=0,
             manager=self.manager,
             container=self.control_panel,
-            anchors={'centerx': 'centerx'}
+            object_id="#slider_panel",
+            anchors={
+                'left': 'left',
+                'right': 'right',
+                'bottom': 'bottom'
+            }
+        )
+        self.slider = pygame_gui.elements.UIHorizontalSlider(
+            relative_rect=pygame.Rect(10, 30, self.control_panel_size[0]-20, 20),
+            start_value=250,
+            value_range=(0, 500),
+            manager=self.manager,
+            container=self.slider_panel,
+            anchors={
+                'left': 'left',
+                'right': 'right'
+            }
+        )
+        self.slider_label = pygame_gui.elements.UILabel(
+            relative_rect=pygame.Rect((0, -20), (50, 20)),
+            text='',
+            manager=self.manager,
+            container=self.slider_panel,
+            anchors={ 
+                'centerx': 'centerx',
+                'bottom': 'bottom',
+                'centerx_target': self.slider, 
+                'bottom_target': self.slider
+            }
         )
 
         self.board_size = (200, 200)
@@ -66,11 +160,10 @@ class Game:
 
     def draw_game_panel(self):
         # Background Color
-        self.game_panel.fill(GREEN)
+        self.game_panel.fill(WHITE)
 
         # Draw Game of Life Grid
         if pygame.time.get_ticks() - self.last_draw > self.next_frame_time and not self.stop_grid:
-            # self.board = np.random.choice([0, 1], self.board_size)
             self.game_of_life_generation()
             self.resize_board()
             self.draw_board()
@@ -87,7 +180,8 @@ class Game:
         game_panel_grid_pos = (self.game_panel_center[0] - self.game_panel_grid_center[0], self.game_panel_center[1] - self.game_panel_grid_center[1])
         
         self.game_panel.blit(self.game_panel_grid, game_panel_grid_pos)
-        self.game_panel.blit(self.game_panel_mask, (0,0), special_flags=pygame.BLEND_RGBA_MIN)
+        self.game_panel.blit(self.game_panel_mask, (0,0), special_flags=pygame.BLEND_RGBA_MULT)
+        pygame.draw.rect(self.game_panel, (255, 255, 255, 255), (0,0)+self.game_panel_size, border_radius=PANEL_RADIUS, width=3)
         self.screen.blit(self.game_panel, self.game_panel_margins)
 
     def game_of_life_generation(self):
@@ -118,7 +212,6 @@ class Game:
 
     def draw_board(self):
         # Draw Grid and apply zoom to the cropped region
-
         cropped_board = self.cropped_board*255
         zoomed_size = (int(cropped_board.shape[1] * self.zoom ),
                        int(cropped_board.shape[0] * self.zoom ))
@@ -141,21 +234,24 @@ class Game:
         # cv2.imshow('Image with self.self.gaps', cv2.transpose(cropped_img))
     
     def resize_window(self, new_width, new_height):
-
+        self.screen.fill(GREEN)
         self.window_height = new_height
         self.window_width = new_width
 
         # Resize Game Panel
-        self.game_panel_size = (int(self.window_width*0.7) - self.game_panel_margins[0]*2,
-                                        self.window_height - self.game_panel_margins[1]*2)
-        self.game_panel = pygame.Surface(self.game_panel_size)
+        self.game_panel_size = (int(self.window_width * GAME_WIDTH_RATIO - self.game_panel_margins[0] * 1.5),
+                                                      self.window_height - self.game_panel_margins[1] * 2)
+        self.game_panel = pygame.Surface(self.game_panel_size, pygame.SRCALPHA)
         self.game_panel_mask = pygame.Surface(self.game_panel_size, pygame.SRCALPHA)
-        pygame.draw.rect(self.game_panel_mask, (255, 255, 255, 0), (0,0)+self.game_panel_size, border_radius=PANEL_RADIUS)
+        pygame.draw.rect(self.game_panel_mask, (255, 255, 255, 255), (0,0)+self.game_panel_size, border_radius=PANEL_RADIUS)
         
         # Resize Control Panel
         self.manager.set_window_resolution((self.window_width, self.window_height))
-        self.control_panel.set_relative_position((int(self.window_width*0.7), self.game_panel_margins[1]))
-        self.control_panel.set_dimensions((int(self.window_width*0.3) - self.game_panel_margins[0], self.window_height - self.game_panel_margins[1]*2))
+        self.control_panel_pos  = (self.game_panel_size[0] + self.game_panel_margins[0] * 2, self.game_panel_margins[1])
+        self.control_panel_size = (int(self.window_width * CONTROL_WIDTH_RATIO) - self.game_panel_margins[0] * 1.5,
+                                                             self.window_height - self.game_panel_margins[1] * 2)
+        self.control_panel.set_relative_position((self.game_panel_size[0] + self.game_panel_margins[0] * 2, self.game_panel_margins[1]))
+        self.control_panel.set_dimensions(self.control_panel_size)
         self.control_panel.rebuild()
 
     def handle_events(self):
@@ -173,13 +269,14 @@ class Game:
                     self.zoom = min(self.zoom_limit[1], self.zoom*1.2)
                 else: 
                     self.zoom = max(self.zoom_limit[0], self.zoom/1.2)
-                print(self.zoom)
 
             elif event.type == pygame_gui.UI_BUTTON_PRESSED:
-                if event.ui_element == self.button_on_panel:
+                if event.ui_element == self.stop_button:
                     self.stop_grid = not self.stop_grid
             
             self.manager.process_events(event)
+            self.next_frame_time = self.slider.get_current_value()
+            self.slider_label.set_text(str(self.next_frame_time))
 
     def run(self):
         while self.running:
