@@ -5,7 +5,6 @@ import numpy as np
 from scipy.ndimage import convolve
 import cv2
 import sys
-import math
 
 # Constants
 BLACK = (0, 0, 0)
@@ -329,11 +328,20 @@ class Game:
 
             self.manager.update(self.time_delta)
             self.manager.draw_ui(self.screen)
+            self.update_button_color()
             # print(self.clock.get_fps())
             pygame.display.flip()
 
         pygame.quit()
         sys.exit()
+
+    def update_button_color(self):
+        if self.stop_grid:
+            self.stop_button.set_text("START")
+            pygame.draw.rect(self.screen,(255,0,0),self.stop_button.get_abs_rect(),2,10)
+        else:
+            self.stop_button.set_text("STOP")
+            pygame.draw.rect(self.screen,(0,255,0),self.stop_button.get_abs_rect(),2,10)
 
 # Main function
 if __name__ == "__main__":
