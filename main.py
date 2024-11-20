@@ -178,8 +178,8 @@ class Game:
         )
 
         self.board_size = (200, 200)
-        self.board = np.zeros(self.board_size)
-        self.board = np.random.choice([0, 1], self.board_size)
+        self.board = np.random.choice([0, 1], self.board_size).astype(np.uint8)
+        self.start_board = self.board
 
         self.gap = 1
         self.zoom = self.game_panel_size[0]/self.board_size[0]
@@ -187,8 +187,10 @@ class Game:
         self.moved = False
         self.last_draw = pygame.time.get_ticks()
         self.next_frame_time = 100
-        self.stop_grid = False
+        self.stop_grid = True
         self.running = True       
+        self.resize_board()
+        self.draw_board()
 
     def draw_game_panel(self):
         # Background Color
@@ -313,6 +315,13 @@ class Game:
             elif event.type == pygame_gui.UI_BUTTON_PRESSED:
                 if event.ui_element == self.stop_button:
                     self.stop_grid = not self.stop_grid
+                if event.ui_element == self.reset_button:
+                    self.board = self.start_board
+                if event.ui_element == self.mix_button:
+                    self.board = np.random.choice([0, 1], self.board_size).astype(np.uint8)
+                if self.stop_grid:
+                    self.resize_board()
+                    self.draw_board()
             
             self.manager.process_events(event)
             self.next_frame_time = self.slider.get_current_value()
